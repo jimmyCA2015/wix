@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Project variables -->
+<!--Include statements, first one must always be there, other two are for extensions added-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+   xmlns:iis="http://schemas.microsoft.com/wix/IIsExtension"
+   xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
+   xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension"
+   xmlns:xmlsearch="http://schemas.rottedfrog.co.uk/wix/XmlSearch">
+    <?include "config.wxi"?>
+    <Product Id="*" Name="WebSite" Language="1033" Version="1.0.0.0" Manufacturer="D+H" UpgradeCode="a816b406-b044-4752-bbaf-85b35802eba7">
+        <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" Platform="x64" InstallPrivileges="elevated" />
+        <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+        <!--User Interface, Variables are for customized appearance-->
+        <UIRef Id="CustomInstallDir" />
+        <WixVariable Id="WixUIDialogBmp" Value="left.jpg" />
+        <WixVariable Id="WixUIBannerBmp" Value="banner.jpg" />
+        <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+        <!--Check for .NET 4.5 and IIS installed-->
+        <PropertyRef Id="NETFRAMEWORK45" />
+        <Condition Message="You must install Microsoft .NET Framework 4.5 or higher"><![CDATA[Installed OR NETFRAMEWORK45]]></Condition>
+        <PropertyRef Id="IISMAJORVERSION" />
+        <Condition Message="You must install IIS version 7 or IIS version 8"><![CDATA[Installed OR (IISMAJORVERSION AND (IISMAJORVERSION = "#7" OR IISMAJORVERSION = "#8"))]]></Condition>
+        <!--Go find the IIS root directory from the registry. On most machines that defaults to C:\inetpub\wwwroot. This will be the directory we install into. -->
+        <Property Id="IISROOT">
+            <RegistrySearch Id="IISROOT" Type="directory" Root="HKLM" Key="Software\Microsoft\InetStp" Name="PathWWWRoot" />
+        </Property>
+        <Condition Message="IIS does not appear to be installed correctly, the root directory is not set."><![CDATA[Installed OR IISROOT]]></Condition>
+        <!-- Definitions for accepting new names for App Pool and Virtual Directory-->
+        <!--<Property Id="APPPOOLNAME" Secure="yes" Value="QACreditPathAppPool"/>
+       <Property Id="VDIRNAME" Secure="yes" Value="QACreditPath"/>-->
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+        
+        <Property Id="MSIUSEREALADMINDETECTION" Value="1" />
+        <Property Id="MSIFASTINSTALL" Value="1" />
+        
+        <Property Id="CREDITPATHENVIRONMENT" Value="CreditPathQA2" />
+        <Property Id="CONFIGPATH">C:\config2</Property>
+      
+    
+
+        
+        <UIRef Id="CustomInstallDir" />
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="MAINFOLDER" Name="Websites">
+                <Directory Id="INSTALLFOLDER" Name="CreditPathQA">
+                    <Directory Id="SUBFOLDER" Name="ExpressOS" />
+                </Directory>
+            </Directory>
+        </Directory>
+        <!--Important! Default WebSite section below must be outside of a component-->
+        <iis:WebSite Id="DefaultWebSite" Description="Default Web Site">
+            <iis:WebAddress Id="AllUnassigned" Port="80" />
+        </iis:WebSite>
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Component Id="BATCHFILE" Guid="f28a8c53-b03d-4058-885d-1367248b2858">
+                <File Id="BATCH01" Name="update.bat" DiskId="1" Source="update.bat" />
+                <File Id="FART" Name="fart.exe" DiskId="1" Source="fart.exe" />
+                <File Id="PATH" Name="path.config" DiskId="1" Source="path.config" />
+            <util:XmlFile Id='Config'
+                 Action='setValue'
+                 ElementPath='/configuration/appSettings/add[\[]@key="Path"[\]]/@value'
+                 File='[INSTALLFOLDER]path.config' Value='[CONFIGPATH]' />
+            </Component>
+        </DirectoryRef>
+        <Feature Id="CreditPathApp" Title="CreditPathApp" Level="1">
+            <ComponentRef Id="BATCHFILE" />
+            <ComponentGroupRef Id="ExpressOS" />
+        </Feature>
+        <CustomAction Id="ca_RunOpenOfficeProgram" Return="ignore" Directory="INSTALLFOLDER" Execute="immediate" ExeCommand="cmd.exe /c update.bat" />
+        <InstallExecuteSequence>
+            <Custom Action="ca_RunOpenOfficeProgram" After="InstallFinalize" />
+        </InstallExecuteSequence>
+      
+        <UI />
+    </Product>
+</Wix>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include>
+  <?define MyDir1= "C:\forwix\ExpressOS - 8.1.2.010_Release_2014\ExpressOS" ?>
+
+  <?define web1=[CREDITPATHENVIRONMENT]?>
+  
+</Include>
